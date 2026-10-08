@@ -48,8 +48,6 @@ std::unique_ptr<Expr> Parser::parseTerm() {
     left = std::make_unique<BinaryExpr>(
         std::move(left), operation, std::move(right)
     );
-
-    return left;
   }
 
   return left;
