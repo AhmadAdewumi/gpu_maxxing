@@ -1,3 +1,4 @@
+#include "../include/Evaluator.hpp"
 #include "../include/Parser.hpp"
 #include <cstddef>
 #include <iostream>
@@ -70,10 +71,17 @@ void test(std::string_view input) {
 
   try {
     Parser parser{input};
-    std::unique_ptr<Expr> result = parser.parse();
+    std::unique_ptr<Expr> ast = parser.parse();
 
     std::cout << "AST:\n";
-    printAST(*result);
+    printAST(*ast);
+
+    std::cout << "----------------------------\n";
+    std::cout << "----------------------------\n";
+
+    const double result = evaluate(*ast);
+    std::cout << "Result: " << result << "\n";
+
   } catch (const std::exception &e) {
     std::cout << "Error: " << e.what() << '\n';
   }

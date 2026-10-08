@@ -9,6 +9,11 @@ add_compile_options(
 
 add_link_options(-fsanitize=address,undefined)
 
-add_executable(lab01_calc src/main.cpp src/Lexer.cpp src/Parser.cpp)
+add_executable(
+lab01_calc src/main.cpp
+    src/Lexer.cpp
+    src/Parser.cpp
+    src/Evaluator.cpp
+)
 
 target_include_directories(lab01_calc PRIVATE include)
