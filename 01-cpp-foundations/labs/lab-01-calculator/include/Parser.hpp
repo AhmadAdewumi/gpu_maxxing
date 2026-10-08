@@ -1,12 +1,14 @@
 #pragma once
 
+#include "AST.hpp"
 #include "Lexer.hpp"
 #include "Token.hpp"
+#include <memory>
 #include <string_view>
 class Parser{
     public:
         explicit Parser(std::string_view input);
-        double parse();
+        std::unique_ptr<Expr> parse();
 
     private:
         Lexer lexer_; //-- the parser's lexer
@@ -15,7 +17,7 @@ class Parser{
         void expect(TokenType tokenType); // to ascertain the token is the type we want or is expecting
 
         //-- grammar rule functions
-        double parseExpression();
-        double parseTerm();
-        double parseFactor();
+        std::unique_ptr<Expr> parseExpression();
+        std::unique_ptr<Expr> parseTerm();
+        std::unique_ptr<Expr> parseFactor();
 };
