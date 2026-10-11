@@ -31,12 +31,12 @@ public:
 
   //-- disablin copy constructor and copy assignment for now
   HashMap(const HashMap &other) = delete;
-  HashMap operator=(const HashMap &other) = delete;
+  HashMap &operator=(const HashMap &other) = delete;
 
   ~HashMap() { clear(); }
 
   void clear() noexcept {
-    for (Node *current : buckets_) {
+    for (Node *&current : buckets_) {
       while (current != nullptr) {
         Node *old = current;
         current = current->next_;
@@ -90,7 +90,7 @@ public:
   const Value *find(const Key &key) const {
     const std::size_t index = bucket_index(key);
 
-    for (Node *current = buckets_[index]; current != nullptr;
+    for (const Node *current = buckets_[index]; current != nullptr;
          current = current->next_) {
       if (current->key_ == key) {
         return &current->value_;
@@ -100,23 +100,34 @@ public:
   }
 };
 
+int main() {
+  HashMap<std::string, int> map;
 
-int main(){
-    HashMap<std::string, int> map;
+  map.insert("Ahmad", 50);
+  map.insert("Ade", 70);
+  map.insert("Segun", 90);
+  map.insert("Ibraheem", 110);
 
-    map.insert("Ahmad", 50);
-    map.insert("Ade", 70);
-    map.insert("Segun", 90);
-    map.insert("Ibraheem", 110);
-    
-    assert(map.size() == 4);
-    assert(map.find("Ahmad") != nullptr);
-    assert(*map.find("Ahmad") == 50);
-    assert(*map.find("Ade") == 70);
-    assert(map.find("missing") == nullptr);
+  assert(map.size() == 4);
+  assert(map.find("Ahmad") != nullptr);
+  assert(*map.find("Ahmad") == 50);
+  assert(*map.find("Ade") == 70);
+  assert(map.find("missing") == nullptr);
 
-    // update test
-    map.insert("Ahmad", 100);
-    assert(*map.find("Ahmad") == 100);
-    assert(map.size() == 4);
+  // update test
+  map.insert("Ahmad", 100);
+  assert(*map.find("Ahmad") == 100);
+  assert(map.size() == 4);
+
+  HashMap<int, int> collisions(2);
+  
+  collisions.insert(0, 100);
+  collisions.insert(2, 200);
+  collisions.insert(4, 400);
+  
+  // All three keys map to bucket 0: key % 2.
+  assert(*collisions.find(0) == 100);
+  assert(*collisions.find(2) == 200);
+  assert(*collisions.find(4) == 400);
+  assert(collisions.size() == 3);
 }
