@@ -80,7 +80,12 @@ Matrix<T> multiply_ijk(const Matrix<T> &a, const Matrix<T> &b) {
         "Incomaptible matrix dimensions for multiplication");
   }
 
+  //-- woww really hug performance boost, after scrapping the () operator and
+  // just use raw pointers
   Matrix<T> results(a.rows(), b.cols());
+  const T *a_data = a.data();
+  const T *b_data = b.data();
+  T *result_data = results.data();
 
   const std::size_t no_of_a_rows = a.rows();
   const std::size_t no_of_a_cols_and_no_of_b_rows =
@@ -98,10 +103,11 @@ Matrix<T> multiply_ijk(const Matrix<T> &a, const Matrix<T> &b) {
       // --walks thru each choosen row and col, take matching elements,
       // multiply them and add it to our sum
       for (std::size_t k{0}; k < no_of_a_cols_and_no_of_b_rows; ++k) {
-        sum += a(i, k) * b(k, j);
+        sum += a_data[i * no_of_a_cols_and_no_of_b_rows + k] *
+               b_data[k * no_of_b_cols + j];
       }
 
-      results(i, j) = sum;
+      result_data[i * no_of_b_cols + j] = sum;
     }
   }
 
@@ -117,6 +123,10 @@ Matrix<T> multiply_ikj(const Matrix<T> &a, const Matrix<T> &b) {
 
   Matrix<T> results(a.rows(), b.cols());
 
+  const T *a_data = a.data();
+  const T *b_data = b.data();
+  T *result_data = results.data();
+
   const std::size_t no_of_a_rows = a.rows();
   const std::size_t no_of_a_cols_and_no_of_b_rows =
       a.cols(); // a number column and same as b number of rows
@@ -125,12 +135,13 @@ Matrix<T> multiply_ikj(const Matrix<T> &a, const Matrix<T> &b) {
   for (std::size_t i{0}; i < no_of_a_rows; ++i) {
     // k loop is responsible for choosing an element of the row of matrix a
     for (std::size_t k{0}; k < no_of_a_cols_and_no_of_b_rows; ++k) {
-      const T value = a(i, k);
+      const T value = a_data[i * no_of_a_cols_and_no_of_b_rows + k];
 
       // j visits every column of b and then we multiply our earlier value with
       // each element there
       for (std::size_t j{0}; j < no_of_b_cols; ++j) {
-        results(i, j) += value * b(k, j);
+        result_data[i * no_of_b_cols + j] +=
+            value * b_data[k * no_of_b_cols + j];
       }
     }
   }
@@ -138,8 +149,11 @@ Matrix<T> multiply_ikj(const Matrix<T> &a, const Matrix<T> &b) {
   return results;
 }
 
-
-// actually, this should be fast when n is large like 1024, but tf, it is so slowwwww
+// actually, this should be fast when n is large like 1024, but tf, it is so
+// slowwwww, so it was largely becuase i was calling the () operator, which
+// performs its own checks millions of times als, but refactoring that, it
+// really really really shines on large inputs now, actually not really,
+// multiply_ikj is still the fastest
 template <typename T>
 Matrix<T> multiply_block_by_block(const Matrix<T> &a, const Matrix<T> &b,
                                   std::size_t block_size = 32) {
@@ -152,12 +166,16 @@ Matrix<T> multiply_block_by_block(const Matrix<T> &a, const Matrix<T> &b,
     throw std::invalid_argument("Block size must be positive");
   }
 
-  Matrix<T> results(a.rows(), b.cols());
-
   const std::size_t no_of_a_rows = a.rows();
   const std::size_t no_of_a_cols_and_no_of_b_rows =
       a.cols(); // a number column and same as b number of rows
   const std::size_t no_of_b_cols = b.cols();
+
+  Matrix<T> results(no_of_a_rows, no_of_b_cols);
+
+  const T *a_data = a.data();
+  const T *b_data = b.data();
+  T *result_data = results.data();
 
   //-- these 3 outer loops choose which block should be worked on
   for (std::size_t ii{0}; ii < no_of_a_rows; ii += block_size) {
@@ -168,14 +186,18 @@ Matrix<T> multiply_block_by_block(const Matrix<T> &a, const Matrix<T> &b,
         // go out of scope
         const std::size_t i_end = ii + std::min(block_size, no_of_a_rows - ii);
         const std::size_t k_end =
-            ii + std::min(block_size, no_of_a_cols_and_no_of_b_rows - kk);
-        const std::size_t j_end = ii + std::min(block_size, no_of_b_cols - jj);
+            kk + std::min(block_size, no_of_a_cols_and_no_of_b_rows - kk);
+        const std::size_t j_end = jj + std::min(block_size, no_of_b_cols - jj);
 
         for (std::size_t i{ii}; i < i_end; ++i) {
           for (std::size_t k{kk}; k < k_end; ++k) {
-            const T value = a(i, k);
+            // const T value = a(i, k);
+            const T value = a_data[i * no_of_a_cols_and_no_of_b_rows + k];
             for (std::size_t j{jj}; j < j_end; ++j) {
-              results(i, j) += value * b(k, j);
+              // results(i, j) += value * b(k, j); // calling operator, (),
+              // makes this operation very slow
+              result_data[i * no_of_b_cols + j] +=
+                  value * b_data[k * no_of_b_cols + j];
             }
           }
         }
@@ -184,3 +206,14 @@ Matrix<T> multiply_block_by_block(const Matrix<T> &a, const Matrix<T> &b,
   }
   return results;
 }
+
+//--- sample results  -----
+/*
+    Matrix size: 1024 x 1024
+    ijk: Checksum result: 2.89988e+13
+    3758.65ms
+    ikj: Checksum result: 2.89988e+13
+    2994.75ms
+    multiply block by block: Checksum result: 2.89988e+13
+    3556.74
+ */

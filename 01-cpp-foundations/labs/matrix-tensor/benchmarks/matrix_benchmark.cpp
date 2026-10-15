@@ -50,7 +50,7 @@ double benchmark_matrix(Function function, const Matrix<double> &a,
 }
 
 int main() {
-  constexpr std::size_t n = 512;
+  constexpr std::size_t n = 1024;
   Matrix<double> a(n, n);
   Matrix<double> b(n, n);
 
@@ -74,5 +74,5 @@ int main() {
                    [block_size](const auto &x, const auto &y) {
                      return multiply_block_by_block(x, y, block_size);
                    },
-                   a, b);
+                   a, b) << "\n";
 }
