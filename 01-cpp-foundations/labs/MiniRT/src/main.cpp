@@ -1,16 +1,19 @@
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <iostream>
-#include <iterator>
 #include <limits>
 #include <memory>
 #include <new>
 #include <stdexcept>
+#include <sys/types.h>
+#include <vector>
 class Arena {
 
 private:
-  std::size_t capacity_;                 // total number of bytes
-  std::size_t used_;                     // bytes consumed including padding
+  std::size_t capacity_; // total number of bytes
+  std::size_t used_; //(actually allocator's current position) bytes consumed
+                     // including padding
   std::unique_ptr<std::byte[]> storage_; // memory owner
 
 public:
@@ -28,35 +31,63 @@ public:
   // allocate() --> to find a suitable region within the existing allocation
   void *allocate(std::size_t bytes, std::size_t alignment) {
     if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
-      throw std::invalid_argument("Alignment must be a power of 2");
+      throw std::invalid_argument("Alignment must be a non zero power of 2");
     }
 
-    // how many bytes remain to use as padding to make the storage aligned
-    const std::size_t remainder = used_ % alignment;
+    if (bytes == 0) {
+      throw std::invalid_argument("Zero byte allocation is not supported");
+    }
 
-    // say we are at offset 35, and we need to start at 40 for this guy to be
-    // aligned given alignment = 8, remainder = 3, then the amount of paddding
-    // we need more becomes 8-3=5
-    const std::size_t padding =
-        remainder == 0 ? remainder : alignment - remainder;
-
-    if (padding > capacity_ - used_) {
+    if (used_ > capacity_ || !storage_) {
       throw std::bad_alloc{};
     }
 
-    // start position for our byte allocation
-    const std::size_t start = used_ + padding;
-    if (bytes > capacity_ - start) {
+    // to get a suitanle aligned address
+    void *candidate = storage_.get() + used_;
+    std::size_t space = capacity_ - used_;
+
+    // std""align adjusts candidate to a suitable aligned address
+    // if a suitable region exists, it returns its alifned address, otherwise
+    // nullptr
+    void *aligned = std::align(alignment, bytes, candidate, space);
+
+    if (aligned == nullptr) {
       throw std::bad_alloc{};
     }
 
-    void *result = storage_.get() + start;
-    used_ = start + bytes; // old used value will be discarded
-    return result;
+    // calculating the new cursor
+
+    // convert to std::byte* so we can perform some pointer operations
+    auto *aligned_bytes = static_cast<std::byte *>(aligned);
+    // records the end of the allocation, includes padding also
+    used_ = static_cast<std::size_t>(aligned_bytes - storage_.get()) + bytes;
+
+    return aligned;
   }
 
+  // this doesn't invalidate the now old pointers tho
   void reset() { used_ = 0; }
 };
+
+std::size_t check_element_size_boundary(size_t rows, size_t cols){
+    if (rows == 0 || cols == 0) {
+        throw std::invalid_argument("Tensor dimenstions cannot be zero");
+    }
+
+    // before multiplying
+    if (rows > std::numeric_limits<std::size_t>::max()/cols) {
+        throw std::length_error("Tensor element count overflow");
+    }
+
+    const std::size_t element_count = rows * cols;
+    // checking element_count * sizeof(double) before multiplying
+    if (element_count >
+        std::numeric_limits<std::size_t>::max() / sizeof(double)) {
+      throw std::length_error("Tensor byte count overflow");
+    }
+
+    return element_count;
+}
 
 struct Tensor {
   double *data;
@@ -129,8 +160,8 @@ void multiply(const Tensor &a, const Tensor &b, Tensor &result) {
 
   // initializing all indices of the result, coz we can't perform
   // operation on an uninitalized one
-  for(std::size_t i{0}; i < result.elements(); ++i){
-      result.data[i] = 0.0;
+  for (std::size_t i{0}; i < result.elements(); ++i) {
+    result.data[i] = 0.0;
   }
 
   for (std::size_t i{0}; i < no_of_a_rows; ++i) {
@@ -158,13 +189,86 @@ void print(const char *name, const Tensor &t) {
   }
 }
 
+struct TensorLifetime {
+  std::string name;
+  std::size_t first_use;
+  std::size_t last_use;
+  // identifies the reusable storage region, maybe for a tensor whose lifetime
+  // expires
+  std::size_t slot;
+};
+
+std::size_t plan_memory(std::vector<TensorLifetime> &tensors) {
+  // we wanna process the tennsors in order of first use
+  std::vector<std::size_t> order(tensors.size());
+
+  // index the order
+  for (std::size_t i{0}; i < order.size(); ++i) {
+    order[i] = i;
+  }
+
+  // sorting the tensor lifetimes by first use,
+  // if  the virst_use is the same vaiule, their initial order is preserved
+  // using stable sort
+  std::stable_sort(order.begin(), order.end(),
+                   [&](std::size_t a, std::size_t b) {
+                     return tensors[a].first_use < tensors[b].first_use;
+                   });
+
+  // this record the last use value of the tensor currently attached to each
+  // slot
+  /** e.g
+   * slot_last_use = []
+   * slot_last_use = [2, 5]
+   * Slot 0: its currently assigned tensor has last_use = 2
+   * Slot 1: its currently assigned tensor has last_use = 5
+   */
+  std::vector<std::size_t> slot_last_use;
+
+  for (std::size_t index : order) {
+    TensorLifetime &tensor = tensors[index];
+
+    if (tensor.first_use > tensor.last_use) {
+      throw std::invalid_argument("Invalid tensor lifetime");
+    }
+
+    bool assigned = false;
+
+    for (std::size_t slot{0}; slot < slot_last_use.size(); ++slot) {
+      /*
+       * Has the tensor previously assigned to this slot finished its last
+       * required use before the new tensor begins its first use
+       * Existing slot's last_use = 2
+       * New tensor's first_use   = 3 , then 2 < 3, the slot is reusable
+       */
+      if (slot_last_use[slot] < tensor.first_use) {
+        tensor.slot =
+            slot; // assign the existing slot to the current tensor
+                  // update our record to refect the new tensor's last use
+        slot_last_use[slot] = tensor.last_use;
+        assigned = true; // record successful selextion of a slot
+        break;
+      }
+    }
+
+    // if we do not find a reusable slot
+    if (!assigned) {
+      //-- say there are two slots before  0 and 1
+      // this one gets 2 , coz of zero indexing
+      tensor.last_use = slot_last_use.size();
+      // we record when this one finishes also
+      slot_last_use.push_back(tensor.last_use);
+    }
+  }
+}
+
 // Fixed graph:
 // A = X * W
 // B = A + R
 // Y = B + S
 int main() {
   try {
-    // 6 matrices each containing 4 doubles = 224 bytes
+    // 7 matrices each containing 4 doubles = 224 bytes
     Arena arena(256);
 
     Tensor x = make_tensor(arena, 2, 2);
@@ -209,9 +313,9 @@ int main() {
     }
 
     std::cout << "Numerical tensor test passed.\n";
-  } catch (std::exception& e) {
-      std::cerr << "Error in our MiniRt engine: " << e.what() << "\n";
-      return 1;
+  } catch (std::exception &e) {
+    std::cerr << "Error in our MiniRt engine: " << e.what() << "\n";
+    return 1;
   }
 
   return 0;
