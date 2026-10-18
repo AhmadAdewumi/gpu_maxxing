@@ -4,4 +4,3 @@ build/
 *.exe
 compile_commands.json
 .cache/
-01-cpp-foundations/labs/matrix-tensor/matrix_asm_O2.s
