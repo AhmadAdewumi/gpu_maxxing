@@ -427,6 +427,8 @@ void test_planner() {
   std::cout << "Planner tests passed.\n";
 }
 
+// this doesn't automaitcally derive the graph and discover thier lifetimes
+
 // EXECUTION
 int main() {
   try {
