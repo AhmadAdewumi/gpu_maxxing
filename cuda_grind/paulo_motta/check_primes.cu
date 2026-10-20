@@ -49,14 +49,12 @@ bool checkPrimeCPU(long long num) {
     return false;
   if (num == 2)
     return true;
-  if (num <= 3)
-    return false;
   if (num % 2 == 0)
     return false;
 
-  for (long long i{3}; i * i < num; ++i) {
+  for (long long i{3}; i * i < num; i+=2) {
     if (num % i == 0) {
-      return true;
+      return false;
     }
   }
   return false;
@@ -68,6 +66,10 @@ int main() {
 
   int threadsPerBlock = 256;
   int totalOddNumbers = (end - start) / 2 + 1;
+
+  // this approach rounds the number up, coz 4500/256 only gives 17 with a
+  // reminder withthis, we can get 18 which  gives extra 108 threads condition,
+  // if(num > end) takes care of that
   int blocksPerGrid = (totalOddNumbers + threadsPerBlock - 1) / threadsPerBlock;
 
   cudaEvent_t startEvent, stopEvent;
