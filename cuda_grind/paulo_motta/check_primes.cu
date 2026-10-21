@@ -72,6 +72,7 @@ int main() {
   // if(num > end) takes care of that
   int blocksPerGrid = (totalOddNumbers + threadsPerBlock - 1) / threadsPerBlock;
 
+  // cuda events measure the GPU work
   cudaEvent_t startEvent, stopEvent;
   cudaEventCreate(&startEvent);
   cudaEventCreate(&stopEvent);
