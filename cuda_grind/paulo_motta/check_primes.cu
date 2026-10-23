@@ -4,7 +4,8 @@
 #include <ios>
 #include <iostream>
 #include <ratio>
-__global__ void checkPrimeKernel(long long start, long long end) {
+__global__ void checkPrimeKernel(long long start, long long end)
+{
   // identifies the current gpu thread
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -16,35 +17,42 @@ __global__ void checkPrimeKernel(long long start, long long end) {
   // and return
   // -- using branches makss the code run sequentially
 
-  if (num > end) {
+  if (num > end)
+  {
     return;
   }
 
   bool isPrime = true;
-  if (num <= 1) {
+  if (num <= 1)
+  {
     isPrime = false;
     return;
   }
 
-  if (num == 2) {
+  if (num == 2)
+  {
     isPrime = true;
     return;
   }
 
-  if (num % 2 == 0) {
+  if (num % 2 == 0)
+  {
     isPrime = false;
     return;
   }
 
-  for (long long i{3}; i * i <= num; i += 2) {
-    if (num % i == 0) {
+  for (long long i{3}; i * i <= num; i += 2)
+  {
+    if (num % i == 0)
+    {
       isPrime = false;
       return;
     }
   }
 }
 
-bool checkPrimeCPU(long long num) {
+bool checkPrimeCPU(long long num)
+{
   if (num <= 1)
     return false;
   if (num == 2)
@@ -52,15 +60,18 @@ bool checkPrimeCPU(long long num) {
   if (num % 2 == 0)
     return false;
 
-  for (long long i{3}; i * i < num; i+=2) {
-    if (num % i == 0) {
+  for (long long i{3}; i * i < num; i += 2)
+  {
+    if (num % i == 0)
+    {
       return false;
     }
   }
   return false;
 }
 
-int main() {
+int main()
+{
   long long start = 100'101L;
   long long end = 109'100L;
 
@@ -93,7 +104,8 @@ int main() {
   //-- for the cpu part
   auto startTime = std::chrono::high_resolution_clock::now();
 
-  for (long long num = start; num < end; num += 2) {
+  for (long long num = start; num < end; num += 2)
+  {
     checkPrimeCPU(num);
   }
 
