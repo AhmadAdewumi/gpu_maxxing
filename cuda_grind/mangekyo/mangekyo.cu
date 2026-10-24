@@ -206,6 +206,7 @@ double runBatched(const unsigned char *h_input, unsigned char *h_output,
 }
 
 int main(int argc, char **argv) {
+  // default image size is approx 64MiB
   const std::size_t noOfPixels =
       (argc > 1) ? static_cast<std::size_t>(std::strtoull(argv[1], nullptr, 10))
                  : (64ULL * 1024 * 1024);
@@ -298,7 +299,7 @@ int main(int argc, char **argv) {
 
   const bool batchedOK =
       verify(h_output, correctAnswer, noOfPixels, "batched approach");
-  
+
   std::printf("Interleaved average: %.3f ms\n\n", batchedMs);
 
   std::printf("Speedups of stream approchs vs synchronous approach:\n");
@@ -318,26 +319,25 @@ int main(int argc, char **argv) {
                                                         : EXIT_FAILURE;
 }
 
-
 /*' SAMPLE RESULT
- * 
- * 
+ *
+ *
  * GPU: Tesla T4
  Async copy engines: 3
  Concurrent kernels: 1
  Image Size: 67108864 pixels (67108864 bytes)
  Streams: 5
- running for the synchronous approach[Sync Approach] PASS: all 67108864 pixels match
- Average synchronous approach time: 12.163 ms
- 
+ running for the synchronous approach[Sync Approach] PASS: all 67108864 pixels
+ match Average synchronous approach time: 12.163 ms
+
  Running the interleaved streams........
  [interleaved approach] PASS: all 67108864 pixels match
  Interleaved average: 7.311 ms
- 
+
  Running batched streams...
  [batched approach] PASS: all 67108864 pixels match
  Interleaved average: 7.828 ms
- 
+
  Speedups of stream approchs vs synchronous approach:
    Interleaved: 1.664x
    Batched:     1.554x
