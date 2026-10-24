@@ -1,3 +1,5 @@
+-rw-rw-r-- 1 root root  89K Oct 24 12:05 mangekyo_profile.nsys-rep
+-rw-r--r-- 1 root root 500K Oct 24 12:06 mangekyo_profile.sqlite
 Generating SQLite file mangekyo_profile.sqlite from mangekyo_profile.nsys-rep
 Processing [mangekyo_profile.sqlite] with [/opt/nvidia/nsight-compute/2025.3.1/host/target-linux-x64/reports/cuda_gpu_trace.py]... 
 
@@ -170,4 +172,35 @@ Processing [mangekyo_profile.sqlite] with [/opt/nvidia/nsight-compute/2025.3.1/h
  981,519,880      1,251,117     436                                                                                  13.422         10,723.997  Device    Pinned    Tesla T4 (0)    1              14  [CUDA memcpy Device-to-Host]                                                
  982,461,146        321,051     430   52,429     1     1   256     1     1       16         0.000         0.000                                                     Tesla T4 (0)    1              16  brightnessKernel(const unsigned char *, unsigned char *, unsigned long, int)
  982,784,277      1,025,457     438                                                                                  13.422         13,086.229  Device    Pinned    Tesla T4 (0)    1              16  [CUDA memcpy Device-to-Host]                                                
+
+Processing [mangekyo_profile.sqlite] with [/opt/nvidia/nsight-compute/2025.3.1/host/target-linux-x64/reports/cuda_api_sum.py]... 
+
+ ** CUDA API Summary (cuda_api_sum):
+
+ Time (%)  Total Time (ns)  Num Calls    Avg (ns)       Med (ns)      Min (ns)    Max (ns)     StdDev (ns)                Name             
+ --------  ---------------  ---------  -------------  -------------  ----------  -----------  -------------  ------------------------------
+     58.9      227,440,962          2  113,720,481.0  113,720,481.0  27,216,982  200,223,980  122,334,421.5  cudaHostAlloc                 
+     19.6       75,602,038         30    2,520,067.9    1,389,655.5       1,630   27,023,583    4,931,580.9  cudaStreamSynchronize         
+     13.7       53,059,720         10    5,305,972.0    5,300,061.5   5,125,486    5,499,436      181,667.6  cudaMemcpy                    
+      4.6       17,660,263          2    8,830,131.5    8,830,131.5   8,109,084    9,551,179    1,019,715.2  cudaFreeHost                  
+      2.4        9,222,897          8    1,152,862.1    1,828,064.0      20,838    1,830,418      933,116.2  cudaDeviceSynchronize         
+      0.4        1,472,186          3      490,728.7      296,766.0       1,617    1,173,803      609,689.4  cudaFree                      
+      0.1          511,729         55        9,304.2        5,015.0       3,981      112,641       15,418.0  cudaLaunchKernel              
+      0.1          496,292        100        4,962.9        3,209.5       2,535       34,723        5,639.0  cudaMemcpyAsync               
+      0.1          491,208          2      245,604.0      245,604.0     126,290      364,918      168,735.5  cudaMalloc                    
+      0.0          119,630          5       23,926.0        7,563.0       6,763       72,756       28,471.9  cudaStreamDestroy             
+      0.0           60,187          1       60,187.0       60,187.0      60,187       60,187            0.0  cuLibraryLoadData             
+      0.0           52,366          5       10,473.2        2,631.0       2,307       40,818       16,977.9  cudaStreamCreateWithFlags     
+      0.0           10,213         55          185.7          106.0          93        1,109          190.8  cuKernelGetName               
+      0.0              890          1          890.0          890.0         890          890            0.0  cuModuleGetLoadingMode        
+      0.0              774          1          774.0          774.0         774          774            0.0  cuLibraryGetKernel            
+      0.0              184          1          184.0          184.0         184          184            0.0  cudaGetDeviceProperties_v12000
+
+Processing [mangekyo_profile.sqlite] with [/opt/nvidia/nsight-compute/2025.3.1/host/target-linux-x64/reports/cuda_gpu_kern_sum.py]... 
+
+ ** CUDA GPU Kernel Summary (cuda_gpu_kern_sum):
+
+ Time (%)  Total Time (ns)  Instances  Avg (ns)   Med (ns)   Min (ns)  Max (ns)   StdDev (ns)                                      Name                                    
+ --------  ---------------  ---------  ---------  ---------  --------  ---------  -----------  ----------------------------------------------------------------------------
+    100.0       26,685,845         55  485,197.2  375,035.0   320,123  1,827,717    428,830.4  brightnessKernel(const unsigned char *, unsigned char *, unsigned long, int)
 
