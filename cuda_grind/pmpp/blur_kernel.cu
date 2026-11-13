@@ -1,9 +1,9 @@
 
 #include <cuda_runtime.h>
 
-__global__ blurKernel(unsigned char *input, unsigned char *output, int width,
+__global__ void blurKernel(unsigned char *input, unsigned char *output, int width,
                       int height) {
-  constexpr BLUR_SIZE = 1;
+  constexpr int  BLUR_SIZE = 1;
 
   int col = blockIdx.x * blockDim.x + threadIdx.x;
   int row = blockIdx.y * blockDim.y + threadIdx.y;

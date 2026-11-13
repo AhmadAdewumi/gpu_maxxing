@@ -3,7 +3,7 @@
 constexpr int TILE_WIDTH = 2;
 __global__ void matmulTiled(float *M, float *N, float *C, int width) {
   int row = blockIdx.y * blockDim.y + threadIdx.y;
-  int col = blockIdx.x * blockDim.x + threadidx.x;
+  int col = blockIdx.x * blockDim.x + threadIdx.x;
 
   // shared by memory shared by all threads in a block
   __shared__ float tileM[TILE_WIDTH][TILE_WIDTH];
@@ -36,17 +36,17 @@ __global__ void matmulTiled(float *M, float *N, float *C, int width) {
     __syncthreads();
 
     // calculating the thread's partial product using values from shared memory
-    for(int k =0; k < TILE_WIDTH; ++k){
-        pValue+=tileM[threadidx.y][k] * tileN[k][threadIdx.x];
+    for (int k = 0; k < TILE_WIDTH; ++k) {
+      pValue += tileM[threadIdx.y][k] * tileN[k][threadIdx.x];
     }
 
-    // prevents threads from overwriting the shared memory while another thread is still readingit
+    // prevents threads from overwriting the shared memory while another thread
+    // is still readingit
     __syncthreads();
-    
   }
 
   // write answer only if it is av alid output kernel
-  if (row <width&&col<width) {
-      P[row*width+col]=pValue;
+  if (row < width && col < width) {
+    C[row * width + col] = pValue;
   }
 }
