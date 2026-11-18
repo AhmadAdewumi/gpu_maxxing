@@ -11,9 +11,6 @@
  * synchronize and commit the private copies back to public, it is done once per
  * thread block and the more thread block we use the greater the overhead
  */
-
-#include <atomic>
-#include <cstddef>
 #include <cuda/atomic>
 #define NUM_BINS 256
 #define BLOCK_DIM 256
