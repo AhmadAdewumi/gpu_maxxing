@@ -1,6 +1,5 @@
 
 // #include <cuda_fp16.h>
-#include <atomic>
 #define N 32
 #define SEG_SIZE 8
 #define WARP_SIZE 32
@@ -101,7 +100,7 @@ __global__ void kogge_stone_double_buffering(float *input, float *output) {
     outBuffer_s = temp;
   }
   if (i < N) {
-    // inBuffer_s contains the latest scan value
+    // inBuffer_s contains the latest scan valuee
     output[i] = inBuffer_s[threadIdx.x];
   }
 }
